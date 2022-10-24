@@ -11,20 +11,18 @@ using OpenCVForUnity.UnityUtils.Helper;
 
 namespace OpenCVForUnityExample
 {
-    /// <summary>
-    /// Multi Object Tracking Based on Color Example
-    /// Referring to https://www.youtube.com/watch?v=hQ-bpfdWQh8.
-    /// </summary>
-    [RequireComponent(typeof(WebCamTextureToMatHelper))]
-    public class Pink_GreenTarget : MonoBehaviour
+    //[RequireComponent(typeof(WebCamTextureToMatHelper))]
+    public class Track_control : MonoBehaviour
     {
         private Vector3 Displacement;
-        public Transform LeftShoulder;
         public Transform RightShoulder;
-        public Transform LeftTarget;
         public Transform RightTarget;
         private Transform Shoulder;
+        private Transform Target;
         private float ArmLength = 8f;
+
+        //public Transform LeftTarget;
+        //public Transform LeftShoulder;
 
 
         /// The texture.
@@ -35,8 +33,8 @@ namespace OpenCVForUnityExample
         int ball1Y;
         int ball1X;
 
-        int ball2Y;
-        int ball2X;
+        //int ball2Y;
+        //int ball2X;
 
         //float widthScale;
         //float heightScale;
@@ -48,7 +46,7 @@ namespace OpenCVForUnityExample
         Mat hsvMat;
 
         ColorObject red = new ColorObject("red");
-        ColorObject green = new ColorObject("green");
+        //ColorObject green = new ColorObject("green");
         WebCamTextureToMatHelper webCamTextureToMatHelper;
         FpsMonitor fpsMonitor;
         // Use this for initialization
@@ -65,17 +63,12 @@ namespace OpenCVForUnityExample
             webCamTextureToMatHelper.Initialize();
         }
 
-        /// <summary>
-        /// Raises the webcam texture to mat helper initialized event.
-        /// </summary>
         public void OnWebCamTextureToMatHelperInitialized()
         {
             Mat webCamTextureMat = webCamTextureToMatHelper.GetMat();
 
             texture = new Texture2D(webCamTextureMat.cols(), webCamTextureMat.rows(), TextureFormat.RGB24, false);
             Utils.fastMatToTexture2D(webCamTextureMat, texture);
-
-            
 
             gameObject.GetComponent<Renderer>().material.mainTexture = texture;
 
@@ -84,7 +77,7 @@ namespace OpenCVForUnityExample
             float width = webCamTextureMat.width();
             float height = webCamTextureMat.height();
 
-            float widthScale = (float)Screen.width / width; 
+            float widthScale = (float)Screen.width / width;
             float heightScale = (float)Screen.height / height;
             //Debug.Log("W: " + (float)Screen.width + "  H: " + (float)Screen.height);
 
@@ -123,7 +116,6 @@ namespace OpenCVForUnityExample
             Debug.Log("OnWebCamTextureToMatHelperErrorOccurred " + errorCode);
         }
 
-        // Update is called once per frame
         void Update()
         {
             if (webCamTextureToMatHelper.IsPlaying() && webCamTextureToMatHelper.DidUpdateThisFrame())
@@ -136,30 +128,35 @@ namespace OpenCVForUnityExample
                 Core.inRange(hsvMat, red.getHSVmin(), red.getHSVmax(), thresholdMat);
                 morphOps(thresholdMat);
                 trackFilteredObject(red, thresholdMat, hsvMat, rgbMat);
-                Imgproc.cvtColor (rgbMat, hsvMat, Imgproc.COLOR_RGB2HSV);
-                Core.inRange (hsvMat, green.getHSVmin (), green.getHSVmax (), thresholdMat);
-                morphOps (thresholdMat);
-                trackFilteredObject (green, thresholdMat, hsvMat, rgbMat);
+
+                //Imgproc.cvtColor(rgbMat, hsvMat, Imgproc.COLOR_RGB2HSV);
+                //Core.inRange(hsvMat, green.getHSVmin(), green.getHSVmax(), thresholdMat);
+                //morphOps(thresholdMat);
+                //trackFilteredObject(green, thresholdMat, hsvMat, rgbMat);
 
                 Utils.fastMatToTexture2D(rgbMat, texture);
 
-                RightTarget.localPosition = new Vector3(0f, ball1Y*(-.03f), ball1X*(.03f));
+                RightTarget.localPosition = new Vector3(0f, ball1Y * (-.03f), ball1X * (.03f));
+                //if not thrown{}
+              
 
                 Vector3 directionR = RightTarget.localPosition - RightShoulder.localPosition;
                 float distanceR = (directionR).sqrMagnitude;
                 if (distanceR > ArmLength * ArmLength)
                 {
                     RightTarget.localPosition -= directionR * .05f;
+                    //maybe this is where we add the force
+                    //also need a "thrown" boolean to stop setting jav position
                 }
 
-                LeftTarget.localPosition = new Vector3(0f, ball2Y * (-.03f), ball2X * (.03f));
+                //LeftTarget.localPosition = new Vector3(0f, ball2Y * (-.03f), ball2X * (.03f));
 
-                Vector3 directionL = LeftTarget.localPosition - LeftShoulder.localPosition;
-                float distanceL = (directionL).sqrMagnitude;
-                if (distanceL > ArmLength * ArmLength)
-                {
-                    LeftTarget.localPosition -= directionL * .05f;
-                }
+                //Vector3 directionL = LeftTarget.localPosition - LeftShoulder.localPosition;
+                //float distanceL = (directionL).sqrMagnitude;
+                //if (distanceL > ArmLength * ArmLength)
+                //{
+                //    LeftTarget.localPosition -= directionL * .05f;
+                //}
             }
         }
         /// <param name="thresh">Thresh.</param>
@@ -213,18 +210,13 @@ namespace OpenCVForUnityExample
                         //iteration and compare it to the area in the next iteration.
                         if (area > MIN_OBJECT_AREA)
                         {
-
                             ColorObject colorObject = new ColorObject();
-
                             colorObject.setXPos((int)(moment.get_m10() / area));
                             colorObject.setYPos((int)(moment.get_m01() / area));
                             colorObject.setType(theColorObject.getType());
                             colorObject.setColor(theColorObject.getColor());
-
                             colorObjects.Add(colorObject);
-
                             colorObjectFound = true;
-
                         }
                         else
                         {
@@ -241,12 +233,12 @@ namespace OpenCVForUnityExample
                             ball1X = (colorObjects[0].getXPos() - 320);
                             ball1Y = (colorObjects[0].getYPos() - 240);
                         }
-                        if(theColorObject == green)
-                        {
-                            ball2X = (colorObjects[0].getXPos() - 320);
-                            ball2Y = (colorObjects[0].getYPos() - 240);
-                            Debug.Log("X: " + ball2X + " // Y: " + ball2Y);
-                        } 
+                        //if (theColorObject == green)
+                        //{
+                        //    ball2X = (colorObjects[0].getXPos() - 320);
+                        //    ball2Y = (colorObjects[0].getYPos() - 240);
+                        //    Debug.Log("X: " + ball2X + " // Y: " + ball2Y);
+                        //}
                     }
                 }
                 else
@@ -256,49 +248,26 @@ namespace OpenCVForUnityExample
             }
         }
 
-        /// <summary>
-        /// Raises the destroy event.
-        /// </summary>
         void OnDestroy()
         {
             webCamTextureToMatHelper.Dispose();
         }
-
-        /// <summary>
-        /// Raises the back button click event.
-        /// </summary>
         public void OnBackButtonClick()
         {
             SceneManager.LoadScene("OpenCVForUnityExample");
         }
-
-        /// <summary>
-        /// Raises the play button click event.
-        /// </summary>
         public void OnPlayButtonClick()
         {
             webCamTextureToMatHelper.Play();
         }
-
-        /// <summary>
-        /// Raises the pause button click event.
-        /// </summary>
         public void OnPauseButtonClick()
         {
             webCamTextureToMatHelper.Pause();
         }
-
-        /// <summary>
-        /// Raises the stop button click event.
-        /// </summary>
         public void OnStopButtonClick()
         {
             webCamTextureToMatHelper.Stop();
         }
-
-        /// <summary>
-        /// Raises the change camera button click event.
-        /// </summary>
         public void OnChangeCameraButtonClick()
         {
             webCamTextureToMatHelper.requestedIsFrontFacing = !webCamTextureToMatHelper.IsFrontFacing();
